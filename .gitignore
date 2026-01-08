@@ -1,0 +1,7 @@
+terraform/.terraform/
+terraform/envs/dev/.terraform/
+terraform/envs/dev/.terraform.lock.hcl
+terraform/envs/dev/terraform.tfstate
+terraform/envs/dev/terraform.tfstate.backup
+.terraform.lock.hcl
+terraform.tfstate
