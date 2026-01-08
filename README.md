@@ -1,18 +1,244 @@
+# Java Spring Boot REST API on AWS ECS Fargate
 
-# Health Check API
+## Overview
+This project demonstrates a **production-ready Java Spring Boot REST API** deployed on **AWS ECS Fargate**, fronted by an **Application Load Balancer (ALB)**, built and deployed using **Terraform** and **GitHub Actions**.
+
+The solution is **multi-environment (dev/prod)**, follows **least-privilege security principles**, and includes **observability via CloudWatch and New Relic**.
+
+---
+
+## Infrastructure Overview
+
+The infrastructure is fully defined using Terraform modules and includes:
+
+- **VPC** with public and private subnets across 2 Availability Zones
+- **Internet Gateway** for public internet access
+- **Application Load Balancer (ALB)** in public subnets
+- **ECS Fargate** cluster and service in private subnets
+- **ECR** for container image storage
+- **IAM Roles** with least privilege (task execution + task role)
+- **Security Groups** enforcing ALB → ECS only access
+- **CloudWatch Log Groups** for application logs
+- **New Relic** for APM, infrastructure metrics, logs, and alerts
+
+---
+
+## Architecture Diagram
+
+```
+                Internet
+                    |
+                    v
+        +------------------------+
+        | Application Load       |
+        | Balancer (Public)      |
+        +-----------+------------+
+                    |
+                    v
+        +------------------------+
+        | ECS Fargate Service    |
+        | (Private Subnets)      |
+        |  - Spring Boot App     |
+        |  - New Relic Agent     |
+        +-----------+------------+
+                    |
+      +-------------+-------------+
+      |                           |
+      v                           v
+ CloudWatch Logs            New Relic
+ (Logs & Metrics)     (APM, Infra, Alerts)
+```
+
+---
+
+## Prerequisites
+
+### Required Tools
+
+- AWS CLI (v2)
+- Terraform >= 1.4
+- Docker
+- Java 17+
+- Maven
+- GitHub account
+
+---
+
+## AWS Credentials & Permissions
+
+### Required AWS Permissions
+
+Your AWS user/role must be able to manage:
+
+- VPC, Subnets, Internet Gateway
+- ECS, ECR, ALB
+- IAM roles and policies
+- CloudWatch Logs
+- Secrets Manager
+
+Recommended policies:
+
+- `AdministratorAccess` (for learning/demo)
+- OR scoped IAM permissions for production
+
+### Local AWS Authentication
+
+```bash
+aws configure
+```
+
+or via environment variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=xxx
+export AWS_SECRET_ACCESS_KEY=xxx
+export AWS_DEFAULT_REGION=us-east-1
+```
+
+---
+
+## Required GitHub Secrets
+
+Configure the following **repository secrets**:
+
+| Secret Name | Description |
+|------------|-------------|
+| AWS_ACCESS_KEY_ID | AWS access key |
+| AWS_SECRET_ACCESS_KEY | AWS secret key |
+| AWS_REGION | AWS region (e.g. us-east-1) |
+| ECR_REPOSITORY | ECR repository name |
+| NEW_RELIC_LICENSE_KEY | New Relic license key |
+
+
+## Terraform Usage
+
+### Environment Structure
+
+```text
+terraform/
+  envs/
+    dev/
+    prod/
+  modules/
+    vpc/
+    alb/
+    ecs/
+    iam/
+    ecr/
+    logs/
+```
+
+### Initialize Terraform
+
+```bash
+terraform init
+```
+
+### Plan Changes
+
+```bash
+terraform plan -var-file=dev.tfvars
+```
+
+### Apply Infrastructure
+
+```bash
+terraform apply -var-file=dev.tfvars
+```
+
+---
+
+## CI/CD Pipeline (GitHub Actions)
+
+### Triggers
+
+- **Pull Request** → build & test only
+- **Push to main** → build, push to ECR, deploy to ECS
+
+### Pipeline Stages
+
+1. Build Java application
+2. Run unit tests
+3. Build Docker image
+4. Push image to ECR
+5. Update ECS task definition
+6. Deploy and verify service
+
+---
+
+## Observability & Monitoring
+
+### CloudWatch
+
+- Application logs
+- ECS task logs
+
+### New Relic
+
+- Java APM metrics
+- ECS/Fargate infrastructure metrics
+- Log aggregation
+- Alerts for performance & availability
+
+---
+
+## Troubleshooting Guide
+
+### ❌ Terraform Errors
+
+- Ensure all module variables are declared
+- Verify correct IAM permissions
+- Run `terraform validate`
+
+### ❌ ECS Tasks Not Starting
+
+- Check CloudWatch logs
+- Verify IAM task execution role
+- Confirm ECR image exists
+
+### ❌ ALB Health Check Failing
+
+- Ensure `/health` endpoint is reachable
+- Confirm security group allows ALB → ECS
+
+### ❌ New Relic Data Missing
+
+- Verify license key secret access
+- Confirm New Relic sidecar is running
+- Check ECS task environment variables
+
+---
+
+## Security Best Practices
+
+- Private subnets for ECS tasks
+- ALB is the only internet-facing component
+- Secrets stored in AWS Secrets Manager
+- Least-privilege IAM roles
+- TLS recommended for production
+
+---
+
+## Environments
+
+| Environment | Purpose |
+|------------|--------|
+| dev | Development & testing |
+| prod | Production workload |
+---
+
+## Summary
+
+✔ Fully automated infrastructure
+✔ Secure, scalable architecture
+✔ Multi-environment support
+✔ CI/CD with GitHub Actions
+✔ Full observability with New Relic
+
+
+# Application Build & Run
 
 This project consists of a minimal Spring Boot REST API and an optimized Docker configuration. The application provides a simple health check endpoint and is designed with production-grade security and performance in mind.
-
-## Project Structure
-```
-devops-take-home/
-├── README.md           # Project documentation
-├── docker/
-│   └── Dockerfile      # Optimized multi-stage Dockerfile
-├── src/                # Java source code
-├── pom.xml             # Maven configuration
-└── ... (terraform/workflows)
-```
 
 ## Prerequisites 
 - Docker
